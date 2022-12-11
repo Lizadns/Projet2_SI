@@ -16,6 +16,9 @@
  *         -3 if the archive contains a header with an invalid checksum value
  */
 int check_archive(int tar_fd) {
+    //un descripteur de fichier est le int que open renvoie : 0 = STDIN, 1 = STDOUT, 2 = STDERR
+    
+    
     return 0;
 }
 
