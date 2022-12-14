@@ -1,5 +1,6 @@
 #include "lib_tar.h"
-
+#include <unistd.h>
+#include <stdio.h>
 /**
  * Checks whether the archive is valid.
  *
@@ -17,9 +18,18 @@
  */
 int check_archive(int tar_fd) {
     //un descripteur de fichier est le int que open renvoie : 0 = STDIN, 1 = STDOUT, 2 = STDERR
+    int count = 2;
+    tar_header_t buffer;
+    size_t size = 512;
+    int r = read(tar_fd,&buffer,size);
+
+    if(r==-1){
+        return 0;
+    }
+    printf("%ld\n",sizeof(tar_header_t) );
+    printf("%s\n", buffer.name);
     
-    
-    return 0;
+    return count;
 }
 
 /**
@@ -121,3 +131,4 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
     return 0;
 }
+
