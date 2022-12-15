@@ -68,11 +68,25 @@ int check_archive(int tar_fd) {
  *         any other value otherwise.
  */
 int exists(int tar_fd, char *path) {
-    int test = access(path,F_OK);//F_OK check l'existence du fichier
-    if(test==0){
-        return 1;
+    tar_header_t header;
+    char verif_end[512*2];//archive se termine par 2 bloc de 512 de 0
+    int nb_headers = 0;
+    size_t size = 512;
+    char zeroBlock[size*2];
+    memset(zeroBlock, 0, size*2);//rempli zeroblock de 512*2 zéros
+    int size_files = 0;//pour avancer du bon nombre de bits pour voir le prochain header ou la fin du fichier
+    while (1){
+        pread(tar_fd, &verif_end, size*2, (nb_headers+size_files)*size);
+        if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
+            break;
+        }
+        pread(tar_fd, &header, size, (nb_headers+size_files)*size);
+        if (strcmp(header.name,path)==0){
+            return 1;
+        }
+        size_files += (TAR_INT(header.size)/ 512 + (TAR_INT(header.size)% 512 != 0));
+        nb_headers ++;
     }
-
     return 0;
 }
 
