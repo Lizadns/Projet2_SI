@@ -40,6 +40,10 @@ int main(int argc, char **argv) {
     printf("check_archive returned %d\n", ret);
 
     ret = exists(fd, "lib_t");
-    printf("check_archive returned %d\n", ret);
+    printf("exists returned %d\n", ret);
+    ret = is_file(fd, "lib_tar.c");
+    printf("is_file returned %d\n", ret);
+    ret= is_symlink(fd, "lib_tar.c");
+    printf("is_symlink returned %d\n", ret);
     return 0;
 }
