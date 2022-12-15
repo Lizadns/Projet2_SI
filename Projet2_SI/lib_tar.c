@@ -1,6 +1,9 @@
 #include "lib_tar.h"
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+
+
 /**
  * Checks whether the archive is valid.
  *
