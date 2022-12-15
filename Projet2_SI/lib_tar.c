@@ -31,7 +31,7 @@ int check_archive(int tar_fd) {
             break;
         }
         pread(tar_fd, &header, 512, nb_headers*512 + size_files);
-        if (header.magic != TMAGIC){
+        if (memcmp(header.magic,TMAGIC,5)!=0){
             return -1;
         }
         if (header.version != TVERSION){
