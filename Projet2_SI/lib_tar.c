@@ -41,12 +41,14 @@ int check_archive(int tar_fd) {
         if (memcmp(header.version, TVERSION, 2)!=0){
             return -2;
         }
+        long int sum = TAR_INT(header.chksum);
+        memset(header.chksum, ' ', 8);
         uint8_t* ptr = (uint8_t*) &header;
-        int verif_chksum = 0;
+        long int verif_chksum = 0;
         for (int i =0; i < 512; i++){
             verif_chksum += *(ptr+i);
         }
-        if (verif_chksum != TAR_INT(header.chksum)){
+        if (verif_chksum != sum){
             return -3;
         }
         size_files += TAR_INT(header.size);
