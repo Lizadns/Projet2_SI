@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 
 /**
@@ -25,23 +26,22 @@ int check_archive(int tar_fd) {
     char verif_end[512*2];
     int nb_headers = 0;
     size_t size = 512;
-    char zeroBlock[512*2];
-    memset(zeroBlock, 0, 512*2);
-    int size_files = 0;
+    char zeroBlock[size*2];
+    memset(zeroBlock, 0, size*2);
+    uintptr_t size_files = 0;
     while (1){
-        pread(tar_fd, &verif_end, 512*2, nb_headers*512+size_files);
+        pread(tar_fd, &verif_end, 512*2, nb_headers*size+size_files);
         if (memcmp(verif_end,zeroBlock, 512*2)==0){ 
             break;
         }
-        pread(tar_fd, &header, 512, nb_headers*512 + size_files);
+        pread(tar_fd, &header, 512, nb_headers*size + size_files);
         if (memcmp(header.magic,TMAGIC,5)!=0){
             return -1;
         }
-        if (header.version != TVERSION){
+        if (memcmp(header.version, TVERSION, 2)!=0){
             return -2;
         }
-        uint32_t verif_chksum = 0;
-        size_files += (int) header.size;
+        size_files += (uintptr_t) header.size;
         nb_headers ++;
 
     }
