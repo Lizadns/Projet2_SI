@@ -30,15 +30,15 @@ int check_archive(int tar_fd) {
     memset(zeroBlock, 0, size*2);//rempli zeroblock de 512*2 zéros
     int size_files = 0;//pour avancer du bon nombre de bits pour voir le prochain header ou la fin du fichier
     while (1){
-        pread(tar_fd, &verif_end, size*2, nb_headers*size+size_files);
+        pread(tar_fd, &verif_end, size*2, (nb_headers+size_files)*size);
         if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
             break;
         }
-        pread(tar_fd, &header, size, nb_headers*size + size_files);
+        pread(tar_fd, &header, size, (nb_headers+size_files)*size);
         if (memcmp(header.magic,TMAGIC,5)!=0){
             return -1;
         }
-        if (memcmp(header.version, TVERSION, 2)!=0){
+        if (memcmp(header.version,TVERSION, 2)!=0){
             return -2;
         }
         long int sum = TAR_INT(header.chksum);
@@ -51,7 +51,7 @@ int check_archive(int tar_fd) {
         if (verif_chksum != sum){
             return -3;
         }
-        size_files += TAR_INT(header.size);
+        size_files += (TAR_INT(header.size)/ 512 + (TAR_INT(header.size)% 512 != 0));
         nb_headers ++;
 
     }
