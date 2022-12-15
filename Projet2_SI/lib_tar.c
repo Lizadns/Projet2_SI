@@ -23,15 +23,15 @@
 int check_archive(int tar_fd) {
     //un descripteur de fichier est le int que open renvoie : 0 = STDIN, 1 = STDOUT, 2 = STDERR
     tar_header_t header;
-    char verif_end[512*2];
+    char verif_end[512*2];//archive se termine par 2 bloc de 512 de 0
     int nb_headers = 0;
     size_t size = 512;
     char zeroBlock[size*2];
-    memset(zeroBlock, 0, size*2);
-    uintptr_t size_files = 0;
+    memset(zeroBlock, 0, size*2);//rempli zeroblock de 512*2 zéros
+    uintptr_t size_files = 0;//pour avancer du bon nombre de bits pour voir le prochain header ou la fin du fichier
     while (1){
         pread(tar_fd, &verif_end, 512*2, nb_headers*size+size_files);
-        if (memcmp(verif_end,zeroBlock, 512*2)==0){ 
+        if (memcmp(verif_end,zeroBlock, 512*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
             break;
         }
         pread(tar_fd, &header, 512, nb_headers*size + size_files);
@@ -58,6 +58,11 @@ int check_archive(int tar_fd) {
  *         any other value otherwise.
  */
 int exists(int tar_fd, char *path) {
+    int test = access(path,F_OK);//F_OK check l'existence du fichier
+    if(test==0){
+        return 1;
+    }
+
     return 0;
 }
 
