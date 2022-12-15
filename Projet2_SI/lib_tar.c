@@ -42,8 +42,8 @@ int check_archive(int tar_fd) {
             return -2;
         }
         uint8_t* ptr = (uint8_t*) &header;
-        uint8_t verif_chksum = 0;
-        for (int i =0; i < 64; i++){
+        int verif_chksum = 0;
+        for (int i =0; i < 512; i++){
             verif_chksum += *(ptr+i);
         }
         if (verif_chksum != TAR_INT(header.chksum)){
