@@ -18,18 +18,31 @@
  */
 int check_archive(int tar_fd) {
     //un descripteur de fichier est le int que open renvoie : 0 = STDIN, 1 = STDOUT, 2 = STDERR
-    int count = 2;
-    tar_header_t buffer;
+    tar_header_t header;
+    char verif_end[512*2];
+    int nb_headers = 0;
     size_t size = 512;
-    int r = read(tar_fd,&buffer,size);
+    char zeroBlock[512*2];
+    memset(zeroBlock, 0, 512*2);
+    int size_files = 0;
+    while (1){
+        pread(tar_fd, &verif_end, 512*2, nb_headers*512+size_files);
+        if (memcmp(verif_end,zeroBlock, 512*2)==0){ 
+            break;
+        }
+        pread(tar_fd, &header, 512, nb_headers*512 + size_files);
+        if (header.magic != TMAGIC){
+            return -1;
+        }
+        if (header.version != TVERSION){
+            return -2;
+        }
+        uint32_t verif_chksum = 0;
+        size_files += (int) header.size;
+        nb_headers ++;
 
-    if(r==-1){
-        return 0;
     }
-    printf("%ld\n",sizeof(tar_header_t) );
-    printf("%s\n", buffer.name);
-    
-    return count;
+    return nb_headers;
 }
 
 /**
