@@ -45,5 +45,22 @@ int main(int argc, char **argv) {
     printf("is_file returned %d\n", ret);
     ret= is_symlink(fd, "lib_tar.c");
     printf("is_symlink returned %d\n", ret);
+    char* entries[100];
+    for (int i =0; i<100; i++){
+        entries[i]= malloc(100);
+    }
+    size_t size= 100;
+    ret= list(fd, "dir/", entries, &size);
+    printf("list returned %d\n", ret);
+    printf("[");
+    for (int i =0; i<size; i++){
+        printf(" %s", entries[i]);
+    }
+    printf(" ]\n");
+    uint8_t* dest= malloc(100);
+    size_t size2 = 100;
+    ret = read_file(fd, "dir/test.txt", 0, dest,&size2);
+    printf("read_file returned %d\n", ret);
+    printf("%s\n", (char*) dest);
     return 0;
 }

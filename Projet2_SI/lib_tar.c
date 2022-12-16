@@ -212,9 +212,47 @@ int is_symlink(int tar_fd, char *path) {
  *         any other value otherwise.
  */
 int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
-    if (no_entries ==0){
-
+    tar_header_t header;
+    char verif_end[512*2];//archive se termine par 2 bloc de 512 de 0
+    int nb_headers = 0;
+    size_t size = 512;
+    char zeroBlock[size*2];
+    memset(zeroBlock, 0, size*2);//rempli zeroblock de 512*2 zéros
+    int size_files = 0;//pour avancer du bon nombre de bits pour voir le prochain header ou la fin du fichier
+    while (1){
+        pread(tar_fd, &verif_end, size*2, (nb_headers+size_files)*size);
+        if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
+            break;
+        }
+        pread(tar_fd, &header, size, (nb_headers+size_files)*size);
+        if (strcmp(header.name, path)==0 && header.typeflag == DIRTYPE){
+            tar_header_t header_entrie;
+            int n_entries=0;
+            int size_entries=0;
+            int offset = (nb_headers+size_files+1)*size;
+            while(1){
+                pread(tar_fd, &verif_end, size*2, offset+(n_entries+size_entries)*size);
+                if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
+                    break;
+                }
+                if(*no_entries==n_entries){
+                    return 1;
+                }
+                pread(tar_fd,&header_entrie,size, offset+(n_entries+size_entries)*size);
+                strcpy(entries[n_entries], header_entrie.name);
+                size_entries +=  (TAR_INT(header_entrie.size)/ 512 + (TAR_INT(header_entrie.size)% 512 != 0));
+                n_entries++;
+            }
+            *no_entries = n_entries;
+            return 1;
+        }
+        if (strcmp(header.name,path)==0 && header.typeflag==SYMTYPE){
+            return list(tar_fd, header.linkname, entries, no_entries);
+        }
+        size_files += (TAR_INT(header.size)/ 512 + (TAR_INT(header.size)% 512 != 0));
+        nb_headers ++;
     }
+    *no_entries=0;
     return 0;
 }
 
@@ -237,6 +275,37 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
  *
  */
 ssize_t read_file(int tar_fd, char *path, size_t offset, uint8_t *dest, size_t *len) {
-    return 0;
+    tar_header_t header;
+    char verif_end[512*2];//archive se termine par 2 bloc de 512 de 0
+    int nb_headers = 0;
+    size_t size = 512;
+    char zeroBlock[size*2];
+    memset(zeroBlock, 0, size*2);//rempli zeroblock de 512*2 zéros
+    int size_files = 0;//pour avancer du bon nombre de bits pour voir le prochain header ou la fin du fichier
+    while (1){
+        pread(tar_fd, &verif_end, size*2, (nb_headers+size_files)*size);
+        if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
+            break;
+        }
+        pread(tar_fd, &header, size, (nb_headers+size_files)*size);
+        if (strcmp(header.name,path)==0 && (header.typeflag==AREGTYPE||header.typeflag==REGTYPE)){
+            if (offset>TAR_INT(header.size)){
+                return -2;
+            }
+            if (*len>= TAR_INT(header.size)-offset){
+                pread(tar_fd, dest, TAR_INT(header.size)-offset, (nb_headers+size_files+1)*size+offset);
+                *len = TAR_INT(header.size)-offset;
+                return 0;
+            }
+            pread(tar_fd, dest, *len, (nb_headers+size_files+1)*size+offset);
+            return TAR_INT(header.size)-offset-*len;
+        }
+        if (strcmp(header.name,path)==0 && (header.typeflag==SYMTYPE)){
+            return read_file(tar_fd, header.linkname, offset, dest, len);
+        }
+        size_files += (TAR_INT(header.size)/ 512 + (TAR_INT(header.size)% 512 != 0));
+        nb_headers ++;
+    }
+    return -1;
 }
 
