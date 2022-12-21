@@ -45,11 +45,11 @@ int main(int argc, char **argv) {
     printf("is_file returned %d\n", ret);
     ret= is_symlink(fd, "lib_tar.c");
     printf("is_symlink returned %d\n", ret);
-    char* entries[100];
-    for (int i =0; i<100; i++){
+    char* entries[3];
+    for (int i =0; i<3; i++){
         entries[i]= malloc(100);
     }
-    size_t size= 100;
+    size_t size= 3;
     ret= list(fd, "dir/", entries, &size);
     printf("list returned %d\n", ret);
     printf("[");

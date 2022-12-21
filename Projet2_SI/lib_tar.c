@@ -188,7 +188,6 @@ int is_symlink(int tar_fd, char *path) {
     return 0;
 }
 
-
 /**
  * Lists the entries at a given path in the archive.
  * list() does not recurse into the directories listed at the given path.
@@ -219,38 +218,42 @@ int list(int tar_fd, char *path, char **entries, size_t *no_entries) {
     char zeroBlock[size*2];
     memset(zeroBlock, 0, size*2);//rempli zeroblock de 512*2 zéros
     int size_files = 0;//pour avancer du bon nombre de bits pour voir le prochain header ou la fin du fichier
+    int index= 0;
     while (1){
         pread(tar_fd, &verif_end, size*2, (nb_headers+size_files)*size);
         if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
             break;
         }
         pread(tar_fd, &header, size, (nb_headers+size_files)*size);
-        if (strcmp(header.name, path)==0 && header.typeflag == DIRTYPE){
-            tar_header_t header_entrie;
-            int n_entries=0;
-            int size_entries=0;
-            int offset = (nb_headers+size_files+1)*size;
-            while(1){
-                pread(tar_fd, &verif_end, size*2, offset+(n_entries+size_entries)*size);
-                if (memcmp(verif_end,zeroBlock, size*2)==0){ //regarde si c'est la fin du fichier en comparant avec la fin théorique
-                    break;
-                }
-                if(*no_entries==n_entries){
-                    return 1;
-                }
-                pread(tar_fd,&header_entrie,size, offset+(n_entries+size_entries)*size);
-                strcpy(entries[n_entries], header_entrie.name);
-                size_entries +=  (TAR_INT(header_entrie.size)/ 512 + (TAR_INT(header_entrie.size)% 512 != 0));
-                n_entries++;
-            }
-            *no_entries = n_entries;
-            return 1;
+        char name[strlen(header.name)] ;
+        strcpy(name, header.name);
+        char delim[] = "/";
+        char* ptr = strtok(name,delim);
+        int i = 0;
+        while(ptr!= NULL){
+            ptr = strtok(NULL, delim);
+            i++;
         }
-        if (strcmp(header.name,path)==0 && header.typeflag==SYMTYPE){
-            return list(tar_fd, header.linkname, entries, no_entries);
+        char name2[strlen(header.name)] ;
+        strcpy(name2, header.name);
+        char path2[strlen(path)];
+        strcpy(path2, path);
+        if(strcmp(strtok(name2,delim), strtok(path2,delim))==0 && i ==2){
+            strcpy(entries[index],header.name);
+            index++;
+            if (index>=*no_entries){
+                break;
+            }
+        }
+        if (strcmp(header.name,path)==0 && (header.typeflag==SYMTYPE)){
+            return list(tar_fd, strcat(header.linkname,"/"), entries, no_entries);
         }
         size_files += (TAR_INT(header.size)/ 512 + (TAR_INT(header.size)% 512 != 0));
         nb_headers ++;
+    }
+    if(index!=0){
+        *no_entries= index;
+        return 1;
     }
     *no_entries=0;
     return 0;
